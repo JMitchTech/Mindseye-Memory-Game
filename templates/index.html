@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mind's Eye — Memory</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --border: #1e2235;
+    --orange: #f97316;
+    --orange2: #fb923c;
+    --orange3: #fdba74;
+    --teal: #22d3ee;
+    --teal2: #06b6d4;
+    --gold: #fbbf24;
+    --purple: #a855f7;
+    --pink: #ec4899;
+    --text: #e2e8f0;
+    --muted: #475569;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at 15% 50%, rgba(249,115,22,0.05) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 30%, rgba(34,211,238,0.05) 0%, transparent 55%),
+      repeating-linear-gradient(0deg, transparent, transparent 31px, rgba(255,255,255,0.012) 31px, rgba(255,255,255,0.012) 32px),
+      repeating-linear-gradient(90deg, transparent, transparent 31px, rgba(255,255,255,0.012) 31px, rgba(255,255,255,0.012) 32px);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+  }
+
+  /* TITLE */
+  header { text-align: center; margin-bottom: 20px; }
+  .title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(18px, 4vw, 30px);
+    color: var(--orange);
+    letter-spacing: 3px;
+    animation: titlePulse 2s ease-in-out infinite;
+    text-shadow: 3px 3px 0 #7c2d12, 0 0 30px rgba(249,115,22,0.7), 0 0 60px rgba(249,115,22,0.3);
+  }
+  @keyframes titlePulse {
+    0%,100% { text-shadow: 3px 3px 0 #7c2d12, 0 0 20px rgba(249,115,22,0.5), 0 0 40px rgba(249,115,22,0.2); color: var(--orange); }
+    50%      { text-shadow: 3px 3px 0 #7c2d12, 0 0 35px rgba(251,146,60,0.9), 0 0 70px rgba(249,115,22,0.5); color: var(--orange3); }
+  }
+  .subtitle { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--teal); letter-spacing: 4px; margin-top: 8px; opacity: 0.7; }
+
+  /* LAYOUT */
+  .main-layout { display: flex; gap: 20px; align-items: flex-start; width: 100%; max-width: 1100px; justify-content: center; flex-wrap: wrap; }
+  .game-col { display: flex; flex-direction: column; align-items: center; gap: 14px; flex: 1; min-width: 300px; }
+  .side-col { width: 240px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px; }
+
+  /* DIFF + START */
+  .diff-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .diff-btn {
+    font-family: 'Press Start 2P', monospace; font-size: 6px; padding: 7px 11px;
+    background: var(--panel); border: 2px solid var(--border); color: var(--muted);
+    cursor: pointer; letter-spacing: 1px; transition: all 0.15s;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+  }
+  .diff-btn:hover, .diff-btn.active { border-color: var(--orange); color: var(--orange); background: rgba(249,115,22,0.08); }
+  .start-btn {
+    font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 10px 22px;
+    background: var(--orange); border: 2px solid var(--orange2); color: #0a0a0f;
+    cursor: pointer; letter-spacing: 1px; transition: all 0.15s;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .start-btn:hover { background: var(--orange2); box-shadow: 0 0 20px rgba(249,115,22,0.5); }
+
+  /* HUD */
+  .hud { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .hud-box {
+    background: var(--panel); border: 2px solid var(--border); padding: 8px 16px; text-align: center;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .hud-label { font-family: 'Press Start 2P', monospace; font-size: 6px; color: var(--muted); letter-spacing: 2px; margin-bottom: 3px; }
+  .hud-val { font-size: 26px; color: var(--teal); line-height: 1; }
+  .hud-box.matches .hud-val { color: var(--orange); }
+  .hud-box.timer .hud-val { color: var(--gold); }
+
+  /* GRID */
+  .grid { display: grid; gap: 10px; justify-content: center; }
+  .grid.easy   { grid-template-columns: repeat(4, 80px); }
+  .grid.medium { grid-template-columns: repeat(6, 74px); }
+  .grid.hard   { grid-template-columns: repeat(8, 68px); }
+
+  .card-wrap { width: 80px; height: 100px; perspective: 600px; cursor: pointer; }
+  .grid.medium .card-wrap { width: 74px; height: 94px; }
+  .grid.hard   .card-wrap { width: 68px; height: 88px; }
+
+  .card-inner {
+    width: 100%; height: 100%; position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+  }
+  .card-wrap.flipped .card-inner, .card-wrap.matched .card-inner { transform: rotateY(180deg); }
+
+  .card-front, .card-back {
+    position: absolute; inset: 0; border-radius: 2px;
+    backface-visibility: hidden; display: flex; align-items: center;
+    justify-content: center; border: 2px solid; overflow: hidden;
+  }
+
+  /* CARD BACK — pixel eye image */
+  .card-front {
+    background: #0d1b2a;
+    border-color: var(--teal2);
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.6), 0 0 10px rgba(34,211,238,0.2);
+  }
+  .card-front img {
+    width: 100%; height: 100%; object-fit: cover;
+    image-rendering: pixelated;
+    filter: brightness(0.85) saturate(1.1);
+  }
+
+  /* CARD FACE — symbol side */
+  .card-back {
+    background: #1a1a2e; border-color: var(--orange);
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 10px rgba(249,115,22,0.2);
+    transform: rotateY(180deg); flex-direction: column; gap: 4px;
+  }
+  .card-symbol { font-size: 28px; line-height: 1; }
+  .grid.hard .card-symbol { font-size: 22px; }
+
+  .card-wrap.matched .card-back {
+    border-color: var(--teal); background: rgba(34,211,238,0.08);
+    box-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 18px rgba(34,211,238,0.5);
+    animation: matchGlow 0.6s ease forwards;
+  }
+  @keyframes matchGlow {
+    0%   { box-shadow: 0 0 0 rgba(34,211,238,0); }
+    50%  { box-shadow: 0 0 35px rgba(34,211,238,0.9); }
+    100% { box-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 18px rgba(34,211,238,0.5); }
+  }
+  .card-wrap:not(.flipped):not(.matched):hover .card-inner { transform: rotateY(12deg) scale(1.05); }
+
+  /* WIN BANNER */
+  .win-banner {
+    display: none; text-align: center; padding: 18px 24px;
+    border: 3px solid var(--gold); background: rgba(251,191,36,0.06);
+    animation: winPulse 1s ease-in-out infinite alternate; width: 100%;
+  }
+  .win-banner.visible { display: block; }
+  .win-banner h2 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--gold); text-shadow: 2px 2px 0 #78350f; margin-bottom: 8px; }
+  .win-banner p { font-size: 18px; color: var(--text); }
+  @keyframes winPulse {
+    from { box-shadow: 0 0 10px rgba(251,191,36,0.2); }
+    to   { box-shadow: 0 0 30px rgba(251,191,36,0.6); }
+  }
+
+  /* INITIALS MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: var(--panel); border: 3px solid var(--orange);
+    padding: 32px 36px; text-align: center; max-width: 340px; width: 90%;
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+    box-shadow: 0 0 40px rgba(249,115,22,0.4);
+  }
+  .modal h2 { font-family: 'Press Start 2P', monospace; font-size: 11px; color: var(--gold); margin-bottom: 8px; }
+  .modal .stats { font-size: 18px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+  .modal .prompt { font-family: 'Press Start 2P', monospace; font-size: 7px; color: var(--teal); letter-spacing: 2px; margin-bottom: 12px; }
+  .initials-input {
+    font-family: 'Press Start 2P', monospace; font-size: 20px;
+    background: #0a0a0f; border: 2px solid var(--orange); color: var(--orange);
+    text-align: center; letter-spacing: 8px; width: 120px; padding: 10px;
+    text-transform: uppercase; outline: none;
+  }
+  .modal-btn {
+    display: block; width: 100%; margin-top: 16px;
+    font-family: 'Press Start 2P', monospace; font-size: 8px;
+    padding: 12px; background: var(--orange); border: 2px solid var(--orange2);
+    color: #0a0a0f; cursor: pointer; letter-spacing: 1px; transition: all 0.15s;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  .modal-btn:hover { background: var(--orange2); }
+
+  /* LEADERBOARD PANEL */
+  .lb-panel {
+    background: var(--panel); border: 2px solid var(--border);
+    padding: 14px; width: 100%;
+  }
+  .lb-title {
+    font-family: 'Press Start 2P', monospace; font-size: 7px;
+    color: var(--orange); letter-spacing: 2px; margin-bottom: 12px;
+    text-align: center;
+  }
+  .lb-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+  .lb-tab {
+    font-family: 'Press Start 2P', monospace; font-size: 6px;
+    padding: 5px 8px; background: var(--bg); border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer; flex: 1; text-align: center; transition: all 0.15s;
+  }
+  .lb-tab.active { border-color: var(--teal); color: var(--teal); background: rgba(34,211,238,0.06); }
+  .lb-table { width: 100%; font-size: 16px; border-collapse: collapse; }
+  .lb-table th {
+    font-family: 'Press Start 2P', monospace; font-size: 6px;
+    color: var(--muted); letter-spacing: 1px; padding: 4px 6px;
+    border-bottom: 1px solid var(--border); text-align: left;
+  }
+  .lb-table td { padding: 5px 6px; border-bottom: 1px solid rgba(30,34,53,0.5); }
+  .lb-table tr:first-child td { color: var(--gold); }
+  .lb-table tr:nth-child(2) td { color: #9ca3af; }
+  .lb-table tr:nth-child(3) td { color: #b45309; }
+  .rank-col { color: var(--muted); font-size: 13px; width: 24px; }
+  .init-col { color: var(--teal); font-family: 'Press Start 2P', monospace; font-size: 10px; }
+  .empty-lb { font-size: 16px; color: var(--muted); text-align: center; padding: 16px 0; }
+
+  .lb-panel.highlight { border-color: var(--gold); box-shadow: 0 0 20px rgba(251,191,36,0.2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">MIND'S EYE</div>
+  <div class="subtitle">MEMORY CARD GAME</div>
+</header>
+
+<div class="main-layout">
+
+  <!-- GAME COLUMN -->
+  <div class="game-col">
+    <div class="diff-row">
+      <button class="diff-btn" data-diff="easy"   onclick="setDiff('easy')">EASY</button>
+      <button class="diff-btn active" data-diff="medium" onclick="setDiff('medium')">MEDIUM</button>
+      <button class="diff-btn" data-diff="hard"   onclick="setDiff('hard')">HARD</button>
+      <button class="start-btn" onclick="newGame()">▶ NEW GAME</button>
+    </div>
+
+    <div class="hud">
+      <div class="hud-box">
+        <div class="hud-label">MOVES</div>
+        <div class="hud-val" id="movesVal">0</div>
+      </div>
+      <div class="hud-box matches">
+        <div class="hud-label">MATCHES</div>
+        <div class="hud-val" id="matchesVal">0 / 0</div>
+      </div>
+      <div class="hud-box timer">
+        <div class="hud-label">TIME</div>
+        <div class="hud-val" id="timerVal">0:00</div>
+      </div>
+    </div>
+
+    <div class="win-banner" id="winBanner">
+      <h2>🎉 MIND CLEARED!</h2>
+      <p id="winMsg"></p>
+    </div>
+
+    <div class="grid medium" id="grid"></div>
+  </div>
+
+  <!-- LEADERBOARD COLUMN -->
+  <div class="side-col">
+    <div class="lb-panel" id="lbPanel">
+      <div class="lb-title">🏆 HIGH SCORES</div>
+      <div class="lb-tabs">
+        <div class="lb-tab active" onclick="switchTab('easy')">EASY</div>
+        <div class="lb-tab" onclick="switchTab('medium')">MED</div>
+        <div class="lb-tab" onclick="switchTab('hard')">HARD</div>
+      </div>
+      <table class="lb-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>NAME</th>
+            <th>MOVES</th>
+            <th>TIME</th>
+          </tr>
+        </thead>
+        <tbody id="lbBody">
+          <tr><td colspan="4" class="empty-lb">No scores yet!</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- INITIALS MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2>🎉 YOU WIN!</h2>
+    <div class="stats" id="modalStats"></div>
+    <div class="prompt">ENTER YOUR INITIALS</div>
+    <input class="initials-input" id="initialsInput" maxlength="3" placeholder="AAA" autocomplete="off">
+    <button class="modal-btn" onclick="submitScore()">SUBMIT SCORE</button>
+  </div>
+</div>
+
+<script>
+let difficulty = 'medium';
+let gameState = null;
+let locked = false;
+let timerInterval = null;
+let seconds = 0;
+let lbTab = 'easy';
+let allScores = { easy: [], medium: [], hard: [] };
+
+// ── DIFFICULTY ──
+function setDiff(d) {
+  difficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-diff="${d}"]`).classList.add('active');
+}
+
+// ── TIMER ──
+function startTimer() {
+  clearInterval(timerInterval);
+  seconds = 0;
+  updateTimerDisplay();
+  timerInterval = setInterval(() => { seconds++; updateTimerDisplay(); }, 1000);
+}
+function stopTimer() { clearInterval(timerInterval); }
+function updateTimerDisplay() {
+  const m = Math.floor(seconds / 60), s = seconds % 60;
+  document.getElementById('timerVal').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+}
+function fmtTime(sec) {
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+// ── NEW GAME ──
+async function newGame() {
+  locked = false;
+  stopTimer();
+  document.getElementById('winBanner').classList.remove('visible');
+  document.getElementById('modalOverlay').classList.remove('visible');
+
+  const res = await fetch('/api/new_game', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ difficulty })
+  });
+  gameState = await res.json();
+  renderGrid();
+  startTimer();
+}
+
+// ── FLIP ──
+async function flipCard(cardId) {
+  if (locked) return;
+  if (gameState.flipped_ids.length >= 2) return;
+  const card = gameState.cards.find(c => c.id === cardId);
+  if (!card || card.flipped || card.matched) return;
+
+  const res = await fetch('/api/flip', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ card_id: cardId })
+  });
+  const data = await res.json();
+  gameState = data;
+  updateHUD();
+  updateCardStates();
+
+  if (data.result === 'nomatch') {
+    locked = true;
+    setTimeout(async () => {
+      const r2 = await fetch('/api/unflip', { method: 'POST' });
+      gameState = await r2.json();
+      updateCardStates();
+      locked = false;
+    }, 900);
+  } else if (data.result === 'win') {
+    stopTimer();
+    showWinModal();
+  }
+}
+
+// ── RENDER ──
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.className = `grid ${difficulty}`;
+  grid.innerHTML = '';
+  gameState.cards.forEach(card => {
+    const wrap = document.createElement('div');
+    wrap.className = 'card-wrap';
+    wrap.dataset.id = card.id;
+    wrap.innerHTML = `
+      <div class="card-inner">
+        <div class="card-front">
+          <img src="/static/mindseye.png" alt="card back">
+        </div>
+        <div class="card-back">
+          <span class="card-symbol">${card.symbol}</span>
+        </div>
+      </div>`;
+    wrap.addEventListener('click', () => flipCard(card.id));
+    grid.appendChild(wrap);
+  });
+  updateHUD();
+}
+
+function updateCardStates() {
+  gameState.cards.forEach(card => {
+    const wrap = document.querySelector(`.card-wrap[data-id="${card.id}"]`);
+    if (!wrap) return;
+    wrap.classList.toggle('flipped', card.flipped && !card.matched);
+    wrap.classList.toggle('matched', card.matched);
+  });
+}
+
+function updateHUD() {
+  document.getElementById('movesVal').textContent = gameState.moves;
+  document.getElementById('matchesVal').textContent = `${gameState.matches} / ${gameState.pair_count}`;
+}
+
+// ── WIN + MODAL ──
+function showWinModal() {
+  document.getElementById('modalStats').textContent =
+    `${gameState.moves} moves  ·  ${fmtTime(seconds)}  ·  ${difficulty.toUpperCase()}`;
+  document.getElementById('initialsInput').value = '';
+  document.getElementById('winBanner').classList.add('visible');
+  document.getElementById('winBanner').querySelector('p').textContent =
+    `${gameState.moves} moves · ${fmtTime(seconds)}`;
+  setTimeout(() => {
+    document.getElementById('modalOverlay').classList.add('visible');
+    document.getElementById('initialsInput').focus();
+  }, 800);
+}
+
+async function submitScore() {
+  let initials = document.getElementById('initialsInput').value.trim().toUpperCase();
+  if (!initials) initials = '???';
+  while (initials.length < 3) initials += '_';
+
+  const res = await fetch('/api/scores', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ initials, moves: gameState.moves, time: seconds, difficulty })
+  });
+  const data = await res.json();
+  allScores[difficulty] = data.scores;
+  document.getElementById('modalOverlay').classList.remove('visible');
+
+  // Switch leaderboard to the played difficulty and highlight
+  switchTab(difficulty);
+  const lb = document.getElementById('lbPanel');
+  lb.classList.add('highlight');
+  setTimeout(() => lb.classList.remove('highlight'), 2000);
+}
+
+// ── LEADERBOARD ──
+function switchTab(tab) {
+  lbTab = tab;
+  document.querySelectorAll('.lb-tab').forEach((t, i) => {
+    t.classList.toggle('active', ['easy','medium','hard'][i] === tab);
+  });
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const body = document.getElementById('lbBody');
+  const scores = allScores[lbTab] || [];
+  if (!scores.length) {
+    body.innerHTML = `<tr><td colspan="4" class="empty-lb">No scores yet!</td></tr>`;
+    return;
+  }
+  body.innerHTML = scores.map((s, i) => `
+    <tr>
+      <td class="rank-col">${['🥇','🥈','🥉'][i] || i+1}</td>
+      <td class="init-col">${s.initials}</td>
+      <td>${s.moves}</td>
+      <td>${fmtTime(s.time)}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadScores() {
+  const res = await fetch('/api/scores');
+  allScores = await res.json();
+  renderLeaderboard();
+}
+
+// ── INIT ──
+document.getElementById('initialsInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitScore();
+});
+
+loadScores();
+newGame();
+</script>
+</body>
+</html>
