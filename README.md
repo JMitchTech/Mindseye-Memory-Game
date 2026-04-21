@@ -2,6 +2,8 @@
 
 **By Wizardwerks Enterprise Labs**
 
+[![Play Now](https://img.shields.io/badge/Play%20Now-Live%20Demo-ff8c00?style=flat-square)](https://mindseye.up.railway.app)
+
 ---
 
 Mind's Eye is a browser-based memory card matching game built in Python and Flask. Test your focus and recall across three difficulty tiers — the board gets harder, the clock keeps running, and your score lives on the leaderboard until someone beats it.
